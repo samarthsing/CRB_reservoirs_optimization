@@ -1,0 +1,5 @@
+data/
+job_output/
+output_opt/
+borg_jared/
+makeDirectory.py
