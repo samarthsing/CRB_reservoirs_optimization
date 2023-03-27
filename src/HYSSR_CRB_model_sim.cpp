@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
          int world_rank; // the rank of the process
          int world_size; // number of processes
          
-         vector<vector<double> > vars_matrix=utils::readMatrixFromDataFile("policy_to_be_simulated.txt");
+         vector<vector<double> > vars_matrix=utils::readMatrixFromDataFile("policies_to_be_simulated_full.txt");
          cout<<vars_matrix.size()<<endl;
          
          
@@ -28,19 +28,19 @@ int main(int argc, char* argv[])
          //vector<double> vars=utils::loadVectorFromDataFile("min_spill_pareto.txt");
           
          //vector<vector<double> > objs_matrix=vector<vector<double> >(vars_matrix.size());
-         vector<double> objs(4,0);
-         vector<double> constrs(0,0);
+         vector<double> objs(6,0);
+         vector<double> constrs(1,0);
           
          vector<double> vars;
          vars = vars_matrix[world_rank];
-           
+         cout<<vars.size()<<endl; 
          MyClass obj1=MyClass();
          //Fcrps obj2=Fcrps(vars);
          
          double* var_array = &vars[0];
          double* obj_array = &objs[0];
          double* constrs_array = &constrs[0];
-         obj1.evaluate(var_array,obj_array, constrs_array,world_rank,1);
+         obj1.evaluate(var_array,obj_array, constrs_array,world_rank,0);
          
          
         MPI_Finalize();

@@ -49,7 +49,7 @@ bool CompareDoubles2 (double A, double B)
 
 double cfs_kaf_conversion_factor = 0.001987;
 double powerhouse_conversion_factor= 14.27641;
-double density_water=10;
+double density_water=1000;
 double gravity=9.81;
 double head_metre_conversion=0.3048;
 double kaf_ksfd_conversion=0.504165;
@@ -57,14 +57,15 @@ double kaf_ksfd_conversion=0.504165;
 int start_row=243;
 int start_col=0;
 double sdNegativeSumOpt;
-vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four_1000/discharge_thousand.txt",sim_days+1,M,start_row-1,start_col);//jan 1
+
+vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four_1000/101/discharge.txt",sim_days+1,M,365-1,start_col);//water year
 //vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/mod_discharge_sim_arrow.txt",sim_days+1,M,0,start_col);//arrow changed
 //vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/mod_discharge_sim_arrow_dun.txt",sim_days+1,M,0,start_col);//arrow changed
+vector<vector<double> > modelled_storage=utils::loadMatrix("../data/optimize_four_1000/101/storage.txt",sim_days+1,M,365-1,start_col);//water year
+vector<vector<double> > modelled_generation=utils::loadMatrix("../data/optimize_four_1000/101/generation.txt",sim_days+1,M,365-1,start_col);//water year
+vector<vector<double> > inflow=utils::loadMatrix("../data/optimize_four_1000/101/inflows.txt",sim_days+1,M_comp,start_row+365-1,start_col);//jan 1
+vector<vector<double> > synth_weather=utils::loadMatrix("../data/optimize_four_1000/101/synth_weather.txt",sim_days+1,34,start_row+365-1,start_col);//jan 1
 
-vector<vector<double> > modelled_storage=utils::loadMatrix("../data/optimize_four_1000/storage_thousand.txt",sim_days+1,M,start_row-1,start_col);//jan 1
-vector<vector<double> > modelled_generation=utils::loadMatrix("../data/optimize_four_1000/generation_thousand.txt",sim_days+1,M+1,start_row-1,start_col);//jan 1
-vector<vector<double> > inflow=utils::loadMatrix("../data/optimize_four_1000/inflows_thousand.txt",sim_days+1,M_comp,start_row-1,start_col);//jan 1
-vector<vector<double> > synth_weather=utils::loadMatrix("../data/optimize_four_1000/synth_weather.txt",sim_days+1,34,start_row-1,start_col);//jan 1
 vector<vector<double> > maxhydro_matrix=utils::readMatrixFromDataFile("../data/HYSSR/max_hydropower.txt");
 vector<vector<double> > maxstorage_matrix=utils::readMatrixFromDataFile("../data/HYSSR/max_storage.txt");
 vector<double> power_max;
@@ -80,11 +81,11 @@ vector<vector<double> > discharge=modelled_discharge;
 //vector<vector<double> > storage(M,vector<double> (sim_days+1,0));
 
 //Data structure to model the prices
-vector<vector<double> > modelled_demands    = utils::loadMatrix("../data/optimize_four_1000/daily_load_regions.txt",sim_days,6,start_row,start_col);//jan 1
-vector<vector<double> > modelled_solar      = utils::loadMatrix("../data/optimize_four_1000/solar_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > modelled_wind       = utils::loadMatrix("../data/optimize_four_1000/wind_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > modelled_cahydro    = utils::loadMatrix("../data/optimize_four_1000/CA_hydro_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > extra_generation = utils::loadMatrix("../data/optimize_four_1000/extra_gen.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_demands    = utils::loadMatrix("../data/optimize_four_1000/101/daily_load_data.txt",sim_days,6,start_row,start_col);//jan 1
+vector<vector<double> > modelled_solar      = utils::loadMatrix("../data/optimize_four_1000/101/solar_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_wind       = utils::loadMatrix("../data/optimize_four_1000/101/wind_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_cahydro    = utils::loadMatrix("../data/optimize_four_1000/101/CA_hydro_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > extra_generation    = utils::loadMatrix("../data/optimize_four_1000/101/extra_gen.txt",sim_days,1,start_row,start_col);//jan 1
 
 map<int,int> PF_rates_months;
 void makePF_rates_monthsIndexing()
@@ -136,8 +137,8 @@ vector<vector<double> > tailwater=vector<vector<double> >(M,vector<double> (sim_
 vector<vector<double> > stage_hyssr=vector<vector<double> >(M_H,vector<double> (sim_days+1,0));
 vector<vector<double> > tailwater_hyssr=vector<vector<double> >(M_H,vector<double> (sim_days+1,0));
 vector<vector<double> > heads=vector<vector<double> >(M_H,vector<double> (sim_days+1,0));
-vector<vector<double> > rbfs_releases=vector<vector<double> >(4,vector<double> (sim_days,0));
-vector<vector<double> > rbfs_inputs=vector<vector<double> >(10,vector<double> (sim_days,0));
+vector<vector<double> > rbfs_releases=vector<vector<double> >(1,vector<double> (sim_days,0));
+vector<vector<double> > rbfs_inputs=vector<vector<double> >(3,vector<double> (sim_days,0));
 
 //Data structures to model GCL(storage dam)
 vector<vector<double> > calender=utils::readMatrixFromDataFile("../data/HYSSR/GCL/calender.txt");
@@ -161,7 +162,7 @@ double RC_conversion_factor=1.23;
 set<int> shoal_reservoirs={2,5,7,9,12,28,35,36,37,38,39,40,41,42};
 set<int> hyssr_reservoirs={2,5,7,9,12,28,29,30,31,32,33,35,36,37,38,39,40,41,42,46,4,17,6,18,13,19,20,21,16,22};
 set<int> spills_reservoirs={9,28,35,36,37,38,42};
-set<int> opt_reservoirs={2,5,9,12};
+set<int> opt_reservoirs={9};
 set<int> run_of_river_reservoirs={39,40,41};
 vector<int> reservoirs_network ={2,46,4,17,5,6,18,13,19,7,20,21,16,22,9,28,29,30,31,32,33,12,35,36,37,38,39,40,41,42};
 
@@ -185,6 +186,7 @@ bool do_transpose=true;
 //global declaration of rbfs
 vector<pFunction_param> p_param=vector<pFunction_param>(1);
 vector<param_function*> mPolicy=vector<param_function*>(1);
+double phi;
 
 
 vector<vector<double> > min_spills=utils::readMatrixFromDataFile("../data/HYSSR/min_constraints/min_spills_opt.txt");
@@ -271,19 +273,13 @@ void makeFlowRoute()
 
 void makeOPTIndexing()
 {
-     opt_index[2]=0;
-     opt_index[5]=1;
-     opt_index[9]=2;
-     opt_index[12]=3;
+     opt_index[9]=0;
 }
 
 void makeinverseOPTIndexing()
 {
 
-      inverse_opt[0]=2;
-      inverse_opt[1]=5;
-      inverse_opt[2]=9;
-      inverse_opt[3]=12;
+      inverse_opt[0]=9;
 }
 void makeSimIndexing()
 {
@@ -521,8 +517,7 @@ void model_storage_res(int res_no, int t,vector<double> uu)
                         
                         double min_discharge=max(0.0,s_ti-s_max[res_no]);
                         double max_discharge=s_ti;
-                        //discharge[res_no][t] = min( max_discharge , max( min_discharge , uu[opt_index[res_no]]*cfs_kaf_conversion_factor) );
-                        discharge[res_no][t]=modelled_discharge[res_no][t]*cfs_kaf_conversion_factor;
+                        discharge[res_no][t] = min( max_discharge , max( min_discharge , uu[opt_index[res_no]]*cfs_kaf_conversion_factor) );
                         powerflow[res_no][t] = min(discharge[res_no][t],power_max[res_no]);
                         spill[res_no][t]    = max(0.0,discharge[res_no][t]- powerflow[res_no][t]);
                         storage[res_no][t]   = (s_ti-discharge[res_no][t]);
@@ -594,7 +589,7 @@ void model_storage_res(int res_no, int t,vector<double> uu)
                                }*/
 
                         }
-                        discharge[res_no][t]=modelled_discharge[res_no][t];
+                        discharge[res_no][t]=max(min_discharge,d_ti)*(1/cfs_kaf_conversion_factor);
                         storage[res_no][t]=(s_ti-d_ti);
                         powerflow[res_no][t] = min(d_ti,power_max[res_no])*(1/cfs_kaf_conversion_factor);
                         spill[res_no][t] = max(0.0,d_ti - power_max[res_no])*(1/cfs_kaf_conversion_factor);
@@ -667,12 +662,51 @@ void fillSpokaneFlow()
 
 void simulate(unsigned int rank_no,unsigned int master_no)
 {
-                       vector<double> uu;
+
+                        vector<double> input; 
+                        vector<double> uu;
+                        //cout<<"inside simulate"<<rank_no<<" "<<master_no<<endl;
+        
+
                 
                        for(int t=1;t<=sim_days;t++)
                        { 
                             
                             int julian = (int)julians[t-1];
+
+                            //input.push_back( storage[2][t-1] );
+                            //input.push_back( storage[5][t-1] );
+                            input.push_back( storage[9][t-1] );
+                            //input.push_back( storage[12][t-1] );
+                            //input.push_back( inflow[2][t-1] );
+                            //input.push_back( inflow[5][t-1] );
+                            input.push_back( inflow[9][t-1] );
+                            //input.push_back( inflow[12][t-1] );
+                            input.push_back( sin( (2*pi*julian/365)-phi));
+                            
+                        
+
+                            //rbfs_inputs[0][t-1]=storage[2][t-1];
+                            //rbfs_inputs[1][t-1]=storage[5][t-1];
+                            rbfs_inputs[0][t-1]=storage[9][t-1];
+                            //rbfs_inputs[3][t-1]=storage[12][t-1];
+                            //rbfs_inputs[4][t-1]=inflow[2][t-1];
+                            //rbfs_inputs[5][t-1]=inflow[5][t-1];
+                            rbfs_inputs[1][t-1]=inflow[9][t-1];
+                            //rbfs_inputs[7][t-1]=inflow[12][t-1];
+                            rbfs_inputs[2][t-1]=sin( (2*pi*julian/365)-phi);
+                        
+
+
+
+
+
+                            uu = mPolicy[0]->get_NormOutput(input);
+                            //cout<<"uu.size() "<<uu.size()<<" "<<rank_no<<" "<<master_no<<endl; 
+                            rbfs_releases[0][t-1]=uu[0];
+                            //rbfs_releases[1][t-1]=uu[1];
+                            //rbfs_releases[2][t-1]=uu[2];
+                            //rbfs_releases[3][t-1]=uu[3];
 
                             for (auto res : reservoirs_network)
                             {
@@ -686,6 +720,10 @@ void simulate(unsigned int rank_no,unsigned int master_no)
                                         model_run_of_river(res,t);
                                 }
                             }
+                             //cout<<"input.size() "<<input.size()<<" "<<rank_no<<" "<<master_no<<endl;
+                             input.clear();
+                             uu.clear();
+
 
                          }
 
@@ -726,9 +764,9 @@ void initializeGCL()
 
         TDA_unreg=inflow[47];
         
-        //vector<vector<double> > ICF_file=utils::loadMatrix("../data/optimize_four_1000/ICF_48.txt",sim_days/365,1,1,0);
-        //utils::transpose(ICF_file);
-        //ICFs=ICF_file[0];
+        vector<vector<double> > ICF_file=utils::loadMatrix("../data/optimize_four_1000/101/icf.txt",sim_days/365,1,1,0);
+        utils::transpose(ICF_file);
+        ICFs=ICF_file[0];
 
 }
 
@@ -771,11 +809,13 @@ void writeSimulationOutput(unsigned int rank_no,unsigned int master_no)
         utils::writeMatrix(heads,"../output_opt/policy"+to_string(rank_no)+"/head_hyssr"+to_string(master_no)+".txt", sim_days+1, M_H);
         utils::writeMatrix(stage_hyssr,"../output_opt/policy"+to_string(rank_no)+"/stage_hyssr"+to_string(master_no)+".txt", sim_days+1, M_H);
         utils::writeMatrix(tailwater_hyssr,"../output_opt/policy"+to_string(rank_no)+"/tailwater_hyssr"+to_string(master_no)+".txt", sim_days+1, M_H);
-        utils::writeMatrix(rbfs_releases,"../output_opt/policy"+to_string(rank_no)+"/rbfs_releases"+to_string(master_no)+".txt", sim_days, 4);
-        utils::writeMatrix(rbfs_inputs,"../output_opt/policy"+to_string(rank_no)+"/rbfs_inputs"+to_string(master_no)+".txt", sim_days, 10);
+        utils::writeMatrix(rbfs_releases,"../output_opt/policy"+to_string(rank_no)+"/rbfs_releases"+to_string(master_no)+".txt", sim_days, 1);
+        utils::writeMatrix(rbfs_inputs,"../output_opt/policy"+to_string(rank_no)+"/rbfs_inputs"+to_string(master_no)+".txt", sim_days, 3);
         utils::writeMatrix(modelled_discharge,"../output_opt/policy"+to_string(rank_no)+"/modelled_discharge"+to_string(master_no)+".txt", sim_days+1, M);
         utils::writeMatrix(modelled_storage,"../output_opt/policy"+to_string(rank_no)+"/modelled_storage"+to_string(master_no)+".txt", sim_days+1, M);
-        utils::writeMatrix(modelled_generation,"../output_opt/policy"+to_string(rank_no)+"/modelled_generation"+to_string(master_no)+".txt", sim_days+1, M);
+        utils::writeMatrix(modelled_generation,"../output_opt/policy"+to_string(rank_no)+"/modelled_generation"+to_string(master_no)+".txt", sim_days+1, M+1);
+        utils::writeMatrix(inflow,"../output_opt/policy"+to_string(rank_no)+"/inflow"+to_string(master_no)+".txt", sim_days+1, M_comp);
+        utils::writeMatrix(total_inflow,"../output_opt/policy"+to_string(rank_no)+"/total_inflow"+to_string(master_no)+".txt", sim_days+1, M);
         //cout<<"write simulatio output "<<to_string(rank_no)+" "<<to_string(master_no)<<endl;
         utils::transpose(generation_fcrps);
         utils::writeMatrix(generation_fcrps,"../output_opt/policy"+to_string(rank_no)+"/generation_fcrps"+to_string(master_no)+".txt", sim_days, M_HR);
@@ -1029,15 +1069,15 @@ vector<double> getMidCPrices(unsigned int rank_no,unsigned int master_no)
 vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
 {
    
-   cout<<"inside BPA revenue"<<endl;
+   
    vector<vector<double> > MidC(1,vector<double> (sim_days,0));
    vector<vector<double> > CAISO(1,vector<double> (sim_days,0));
    MidC[0]=getMidCPrices(rank_no,master_no);
    CAISO[0]=getCaisoPrices(rank_no,master_no);
    vector<double> midc_prices = {MidC[0].begin() + 122, MidC[0].end() - 243}; 
    vector<double> caiso_prices = {CAISO[0].begin() + 122, CAISO[0].end() - 243}; 
-   cout<<"midc_prices.size() "<<midc_prices.size()<<"meanVector(midc_prices)"<<meanVector(midc_prices)<<endl;
-   cout<<"caiso_prices.size() "<<caiso_prices.size()<<"meanVector(caiso_prices)"<<meanVector(caiso_prices)<<endl;
+
+   
    vector<double> load_vector=utils::loadVectorFromDataFile("../data/Revenue Model/load_2018.txt");
    double custom_redux=0;
    double PF_load_y=load_vector[13]-custom_redux*load_vector[13];
@@ -1046,17 +1086,20 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    
    
    
-   vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four_1000/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
+   vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four_1000/101/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
    utils::transpose(extra_bpa_dams);
-   cout<<"extra_bpa_dams[0].size() "<<extra_bpa_dams[0].size()<<"meanVector(extra_bpa_dams[0])"<<meanVector(extra_bpa_dams[0])<<endl;
+   //cout<<"extra_bpa_dams[0].size() "<<extra_bpa_dams[0].size()<<endl;
+   //cout<<"meanVector(extra_bpa_dams[0]) "<<meanVector(extra_bpa_dams[0])<<endl;
    //vector<double> extra_gen=utils::columnSumMatrix(extra_bpa_dams);
    vector<double> bpa_gen=utils::columnSumMatrix(generation_shoal);
-   vector<double> bpa_gen_sub = {bpa_gen.begin() + 122, bpa_gen.end() - 243}; 
+   vector<double> bpa_gen_sub = {bpa_gen.begin() + 122, bpa_gen.end() - 243};
+   //cout<<"bpa_gen_sub.size() "<<bpa_gen_sub.size()<<endl;
+   //cout<<"meanVector(bpa_gen_sub) "<<meanVector(bpa_gen_sub)<<endl; 
    vector<double> BPA_hydro(bpa_gen_sub.size(),0);
    std::transform(bpa_gen_sub.begin(),bpa_gen_sub.end(), extra_bpa_dams[0].begin(),BPA_hydro.begin(),std::plus<double>());
    std::transform(BPA_hydro.begin(), BPA_hydro.end(), BPA_hydro.begin(),[=](double i) { return i/24; });
-   cout<<"BPA_hydro.size() "<<BPA_hydro.size()<<"meanVector(BPA_hydro)"<<meanVector(BPA_hydro)<<endl;
-   
+   //cout<<"BPA_hydro.size() "<<BPA_hydro.size()<<endl;
+   //cout<<"meanVector(BPA_hydro) "<<meanVector(BPA_hydro)<<endl;
    
    //cout<<" in revenue model 1"<<endl;
    vector<double> net_resources=utils::loadVectorFromDataFile("../data/Revenue Model/BPA_net_resources_2018.txt");
@@ -1074,13 +1117,14 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    vector<double> load_bpa=modelled_demands[0];
    vector<double> BPAT_load={load_bpa.begin() + 365, load_bpa.begin() + 365+ bpa_rev_sim_days};
    //cout<<"BPAT_load.size() "<<BPAT_load.size()<<endl;
+   //cout<<"meanVector(BPAT_load) "<<meanVector(BPAT_load)<<endl;
    //utils::transpose(modelled_wind);
-   cout<<"BPAT_load.size() "<<BPAT_load.size()<<"meanVector(BPAT_load)"<<meanVector(BPAT_load)<<endl;
-   vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four_1000/wind_surrogate_bpa.txt");
+   vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four_1000/101/wind_surrogate_bpa.txt");
    vector<double> BPAT_wind={wind_bpa.begin() + 365, wind_bpa.begin() +365 +bpa_rev_sim_days}; 
    //cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<endl;
+   //cout<<"meanVector(BPAT_wind) "<<meanVector(BPAT_wind)<<endl;
    //std::transform(modelled_wind[0].begin(), modelled_wind[0].end(), BPAT_wind.begin(),[=](double i) { return i *(0.766/1.766); });
-   cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<"meanVector(BPAT_wind)"<<meanVector(BPAT_wind)<<endl;
+   
 
    double costs_y=utils::loadVectorFromDataFile("../data/Revenue Model/BPA_yearly_costs.txt")[8];
    
@@ -1327,8 +1371,9 @@ double flood_level_frequency(vector<double> floodlevel)
                 count_flood+=1;
         }
 
-    return (count_flood*1.0)/sim_years;
+    return (1.0*count_flood)/sim_years;
 }
+
 
 double waterTempConstraints(unsigned int rank_no,unsigned int master_no)
 {
@@ -1375,8 +1420,8 @@ vector<double> getObjectives(unsigned int rank_no,unsigned int master_no)
         J.push_back(meanVector(minEnvironmentConstraints()));
         J.push_back(-1*meanVector(maxRenewablesGeneration()));
         vector<double> floodlevel=floodLevel(rank_no,master_no,discharge[42]);
-        vector<double> floodlevel_historical=floodLevel(rank_no,master_no,modelled_discharge[42]);
-        cout<<"historical flood "<<*max_element(floodlevel_historical.begin(), floodlevel_historical.end())<<endl;
+        //vector<double> floodlevel_historical=floodLevel(rank_no,master_no,modelled_discharge[42]);
+        //cout<<"historical flood "<<*max_element(floodlevel_historical.begin(), floodlevel_historical.end())<<endl;
         J.push_back(*max_element(floodlevel.begin(), floodlevel.end()));
         J.push_back((meanVector(getRevenueBPA(rank_no,master_no))/1000000)*-1);
         J.push_back(flood_level_frequency(floodlevel));
@@ -1386,13 +1431,24 @@ vector<double> getObjectives(unsigned int rank_no,unsigned int master_no)
 
 
 }
+double storage_constraint()
+{
+        for (auto res : opt_reservoirs)
+        {
+            for(int t=1;t<=sim_days;t++)
+            {
+                if(storage[res][t]<=0)
+                    return 1.0;
+            }
+        }
 
+        return 0.0;
+}
 
-
-void evaluate( double* obj,unsigned int inp_rank_no,unsigned int inp_master_no){
-
-                unsigned int rank_no= inp_rank_no,master_no=inp_master_no;
-                
+void initializeRBFs(unsigned int rank_no,unsigned int master_no)
+        {
+                if(do_transpose)
+                {
                 preprocess();
                 makeSimIndexing();
                 makeinverseSimIndexing();
@@ -1402,6 +1458,152 @@ void evaluate( double* obj,unsigned int inp_rank_no,unsigned int inp_master_no){
                 makeinverseHYSSRIndexing();
                 initialize();
                 makeFlowRoute();
+                //cout<<"INITIALIZE RBFS "<<to_string(rank_no)<<" "<<to_string(master_no)<<endl;
+                }
+                
+                vector<vector<double> > min_max_inflow_rbfs_range=utils::readMatrixFromDataFile("../data/optimize_four/inflows_rbfs_ranges.txt");
+
+                
+                //cout<<to_string(rank_no)+"inflow range size "<<to_string(master_no)<< "min_max_inflow_rbfs_range[0]"<< min_max_inflow_rbfs_range[5][1]<<endl;
+                vector<vector<double> > min_max_releases_range=utils::readMatrixFromDataFile("../data/optimize_four/discharge_rbfs_ranges.txt");
+                
+                for(int i=0;i<1;i++)
+                {   
+                p_param[i].tPolicy=1;
+                p_param[i].policyInput=3;
+                p_param[i].policyOutput=1;
+                p_param[i].policyStr=5;
+                param_function* mp1 = new rbf(p_param[i].policyInput,p_param[i].policyOutput,p_param[i].policyStr);
+                //param_function* mp1 = new ncRBF(p_param[i].policyInput,p_param[i].policyOutput,p_param[i].policyStr);
+                mPolicy[i] = mp1;
+                }
+                for(int i=0;i<1;i++)
+                {   
+                
+                        
+                        p_param[i].mIn.push_back(0);
+                        //p_param[i].mIn.push_back(0);
+                        //p_param[i].mIn.push_back(0);
+                        //p_param[i].mIn.push_back(0);
+                        //p_param[i].mIn.push_back(min_max_inflow_rbfs_range[0][0]);
+                        //p_param[i].mIn.push_back(min_max_inflow_rbfs_range[1][0]);
+                        p_param[i].mIn.push_back(min_max_inflow_rbfs_range[2][0]);
+                        //p_param[i].mIn.push_back(min_max_inflow_rbfs_range[3][0]);
+                        p_param[i].mIn.push_back(-1);
+                        
+                        
+                        //p_param[i].MIn.push_back(s_max[2]);
+                        //p_param[i].MIn.push_back(s_max[5]);
+                        p_param[i].MIn.push_back(s_max[9]);
+                        //p_param[i].MIn.push_back(s_max[12]);
+                        //p_param[i].MIn.push_back(min_max_inflow_rbfs_range[0][1]);
+                        //p_param[i].MIn.push_back(min_max_inflow_rbfs_range[1][1]);
+                        p_param[i].MIn.push_back(min_max_inflow_rbfs_range[2][1]);
+                        //p_param[i].MIn.push_back(min_max_inflow_rbfs_range[3][1]);
+                        p_param[i].MIn.push_back(1);
+                        
+
+                        p_param[i].mOut.push_back(0);
+                        p_param[i].MOut.push_back(min_max_releases_range[2][1]);
+                        
+                        mPolicy[i]->setMinInput(p_param[i].mIn); 
+                        mPolicy[i]->setMinOutput(p_param[i].mOut);
+                        mPolicy[i]->setMaxInput(p_param[i].MIn); 
+                        mPolicy[i]->setMaxOutput(p_param[i].MOut);
+                        
+                }
+                //cout<<"after initialize"<<endl;
+        }
+
+
+void evaluate(double* var, double* obj, double* constrs, unsigned int inp_rank_no,unsigned int inp_master_no){
+
+        unsigned int rank_no= inp_rank_no,master_no=inp_master_no;
+        int decsvars=26;
+        //cout<<"evaluate first line"<<rank_no<<" "<<master_no<<endl;
+        initializeRBFs(rank_no,master_no);
+        //cout<<"evaluate initializeRBFs"<<rank_no<<" "<<master_no<<endl;
+        //cout<<"inside evaluate"<<endl;
+        unsigned int p2 = 0;
+        int getArrayLength;
+        for(int k=0;k<1;k++)
+                {
+                
+                double fullVar[p_param[k].policyStr*(2*p_param[k].policyInput+p_param[k].policyOutput)];
+                //double fullVar[p_param[k].policyStr*(2*p_param[k].policyInput+p_param[k].policyOutput)];
+                unsigned int p1 = 0;
+                
+                //ncRBF constant
+                /*
+                if (var[304]<0.5)
+                {
+                
+                        for(unsigned int l = 0; l < p_param[k].policyOutput; l++)
+                        {
+                                fullVar[p1++] = 0.0;
+                                p2++;
+                        }
+                
+                }
+                else
+                {
+                        for(unsigned int l = 0; l < p_param[k].policyOutput; l++)
+                        {
+                                fullVar[p1++] = var[p2++];
+                        }
+                }*/
+                
+                /*
+                for(unsigned int l = 0; l < p_param[k].policyOutput; l++)
+                        {
+                                fullVar[p1++] = 0.0;
+                                p2++;
+                        }
+                */
+                
+
+
+                for(unsigned int i = 0; i < p_param[k].policyStr; i++){
+                
+                        for(unsigned int j = 0; j < p_param[k].policyInput-1; j++)
+                        {
+                                fullVar[p1++] = var[p2++];
+                                fullVar[p1++] = var[p2++];
+                        }
+                        for(unsigned int j = 0; j < 1 ; j++)
+                        {
+                                // set centers to 0 and radii to 1 for sin and cos inputs
+                                fullVar[p1++] = 0.0;
+                                fullVar[p1++] = 1.0;
+                        }
+                        for(unsigned int l = 0; l < p_param[k].policyOutput; l++)
+                        {
+                                fullVar[p1++] = var[p2++];
+                        }
+                        
+                }
+                phi=p2++;
+
+                mPolicy[k]->setParameters(fullVar);
+                
+                //cout<<"mPolicy[k]->param "<< mPolicy[k]->param << endl;
+
+                
+                getArrayLength = sizeof(fullVar) / sizeof(double);
+                vector<double> full_vars_vector(getArrayLength,0);
+                    for(int i=0;i<getArrayLength;i++)
+                         full_vars_vector[i]=fullVar[i];
+
+
+                    if(write_output)
+                {
+                  vector<vector<double> >full_vars_matrix(1,vector<double> (getArrayLength,0));
+                    full_vars_matrix[0]=full_vars_vector;
+                    utils::writeMatrix(full_vars_matrix,"../output_opt/policy"+to_string(rank_no)+"/full_decs_vars"+to_string(master_no)+".txt", getArrayLength, 1);
+                }
+
+                }
+                
                 //cout<<"before getobjectives"<<rank_no<<" "<<master_no<<endl;
                 vector<double> J ;
                 J = getObjectives(rank_no,master_no);
@@ -1410,16 +1612,32 @@ void evaluate( double* obj,unsigned int inp_rank_no,unsigned int inp_master_no){
                 for(unsigned int i=0; i<Nobj; i++){
                               obj[i] = J[i];
                              }
-                
+                constrs[0]= max(0.0,storage_constraint());
 
                 if(write_output)
                 {
                     vector<vector<double> >obj_matrix(1,vector<double> (Nobj,0));
                     obj_matrix[0]=J;
                     utils::writeMatrix(obj_matrix,"../output_opt/policy"+to_string(rank_no)+"/objectives"+to_string(master_no)+".txt", Nobj, 1);
+                                    
+                    
+                    vector<double> vars_vector(decsvars,0);
+                    for(int i=0;i<decsvars;i++)
+                         vars_vector[i]=var[i];
+                         
+                    
+                    
+                    vector<vector<double> >vars_matrix(1,vector<double> (decsvars,0));
+                    vars_matrix[0]=vars_vector;
+                    utils::writeMatrix(vars_matrix,"../output_opt/policy"+to_string(rank_no)+"/decs_vars"+to_string(master_no)+".txt", decsvars, 1);
 
                     
                 }
+
+                //mPolicy[0]->getParameters();
+                
+                for(int k=0;k<1;k++)
+                  mPolicy[k]->clearParameters();
 
 
 
@@ -1446,15 +1664,34 @@ void run_model()
 
 }
 */
-
+/*
 int main()
 {
          
-        MyClass obj1=MyClass();
-        vector<double> objs(6,0);
-        double* obj_array = &objs[0];
-        
-        obj1.evaluate(obj_array,7,0);
+         preprocess();
+         
+         makeHYSSRIndexing();
+         makeinverseHYSSRIndexing();
+         makeOPTIndexing();
+         makeinverseOPTIndexing();
+         makeFlowRoute();
+         //initialize();
+         //writeSimulationOutput();
+         //getObjectives();
+         
+
+         /*
+         vector<double> arima_caiso_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models/midc_arima_coef.txt");
+         vector<vector<double> > residuals_matrix=utils::readMatrixFromDataFile("../data/cons_opt/models/MidC_cons_residuals_cpp.txt");
+         cout<<arima_caiso_coeff.size()<<endl;
+         cout<<residuals_matrix[0].size()<<endl;
+         cout<<residuals_matrix.size()<<endl;
+         cout<<storage.size()<<endl;
+         cout<<storage[0].size()<<endl;
+         for( int i=0;i<10;i++)
+            cout<<storage[9][i]<<endl;
+
          
          return 0;
 }
+*/

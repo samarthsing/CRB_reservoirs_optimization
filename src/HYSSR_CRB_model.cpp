@@ -38,7 +38,7 @@ int sim_days=sim_years*365;
 int no_years=sim_years+2;
 int bpa_rev_sim_years=sim_years-1;
 int bpa_rev_sim_days=sim_days-365;
-int Nobj=4;
+int Nobj=6;
 bool write_output=true;
 bool CompareDoubles2 (double A, double B)
 {
@@ -57,13 +57,15 @@ double kaf_ksfd_conversion=0.504165;
 int start_row=243;
 int start_col=0;
 double sdNegativeSumOpt;
-vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/discharge_48.txt",sim_days+1,M,365-1,start_col);//water year
+
+vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four_1000/101/discharge.txt",sim_days+1,M,365-1,start_col);//water year
 //vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/mod_discharge_sim_arrow.txt",sim_days+1,M,0,start_col);//arrow changed
 //vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/mod_discharge_sim_arrow_dun.txt",sim_days+1,M,0,start_col);//arrow changed
+vector<vector<double> > modelled_storage=utils::loadMatrix("../data/optimize_four_1000/101/storage.txt",sim_days+1,M,365-1,start_col);//water year
+vector<vector<double> > modelled_generation=utils::loadMatrix("../data/optimize_four_1000/101/generation.txt",sim_days+1,M,365-1,start_col);//water year
+vector<vector<double> > inflow=utils::loadMatrix("../data/optimize_four_1000/101/inflows.txt",sim_days+1,M_comp,start_row+365-1,start_col);//jan 1
+vector<vector<double> > synth_weather=utils::loadMatrix("../data/optimize_four_1000/101/synth_weather.txt",sim_days+1,34,start_row+365-1,start_col);//jan 1
 
-vector<vector<double> > modelled_storage=utils::loadMatrix("../data/optimize_four/storage_48.txt",sim_days+1,M,365-1,start_col);//water year
-vector<vector<double> > modelled_generation=utils::loadMatrix("../data/optimize_four/generation_48.txt",sim_days+1,M+1,365-1,start_col);//water year
-vector<vector<double> > inflow=utils::loadMatrix("../data/canadian_dams/inflow_candians.txt",sim_days+1,M_comp,start_row+365-1,start_col);//jan 1
 vector<vector<double> > maxhydro_matrix=utils::readMatrixFromDataFile("../data/HYSSR/max_hydropower.txt");
 vector<vector<double> > maxstorage_matrix=utils::readMatrixFromDataFile("../data/HYSSR/max_storage.txt");
 vector<double> power_max;
@@ -79,11 +81,11 @@ vector<vector<double> > discharge=modelled_discharge;
 //vector<vector<double> > storage(M,vector<double> (sim_days+1,0));
 
 //Data structure to model the prices
-vector<vector<double> > modelled_demands    = utils::loadMatrix("../data/optimize_four/demands_surrogate.txt",sim_days,15,start_row,start_col);//jan 1
-vector<vector<double> > modelled_solar      = utils::loadMatrix("../data/optimize_four/solar_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > modelled_wind       = utils::loadMatrix("../data/optimize_four/wind_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > modelled_cahydro    = utils::loadMatrix("../data/optimize_four/CA_hydro_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > extra_generation = utils::loadMatrix("../data/optimize_four/extra_gen.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_demands    = utils::loadMatrix("../data/optimize_four_1000/101/daily_load_data.txt",sim_days,6,start_row,start_col);//jan 1
+vector<vector<double> > modelled_solar      = utils::loadMatrix("../data/optimize_four_1000/101/solar_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_wind       = utils::loadMatrix("../data/optimize_four_1000/101/wind_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_cahydro    = utils::loadMatrix("../data/optimize_four_1000/101/CA_hydro_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > extra_generation    = utils::loadMatrix("../data/optimize_four_1000/101/extra_gen.txt",sim_days,1,start_row,start_col);//jan 1
 
 map<int,int> PF_rates_months;
 void makePF_rates_monthsIndexing()
@@ -136,7 +138,7 @@ vector<vector<double> > stage_hyssr=vector<vector<double> >(M_H,vector<double> (
 vector<vector<double> > tailwater_hyssr=vector<vector<double> >(M_H,vector<double> (sim_days+1,0));
 vector<vector<double> > heads=vector<vector<double> >(M_H,vector<double> (sim_days+1,0));
 vector<vector<double> > rbfs_releases=vector<vector<double> >(4,vector<double> (sim_days,0));
-vector<vector<double> > rbfs_inputs=vector<vector<double> >(9,vector<double> (sim_days,0));
+vector<vector<double> > rbfs_inputs=vector<vector<double> >(6,vector<double> (sim_days,0));
 
 //Data structures to model GCL(storage dam)
 vector<vector<double> > calender=utils::readMatrixFromDataFile("../data/HYSSR/GCL/calender.txt");
@@ -184,7 +186,8 @@ bool do_transpose=true;
 //global declaration of rbfs
 vector<pFunction_param> p_param=vector<pFunction_param>(1);
 vector<param_function*> mPolicy=vector<param_function*>(1);
-double phi;
+double phi1;
+//double phi2;
 
 
 vector<vector<double> > min_spills=utils::readMatrixFromDataFile("../data/HYSSR/min_constraints/min_spills_opt.txt");
@@ -682,23 +685,18 @@ void simulate(unsigned int rank_no,unsigned int master_no)
                             input.push_back( storage[5][t-1] );
                             input.push_back( storage[9][t-1] );
                             input.push_back( storage[12][t-1] );
-                            input.push_back( inflow[2][t-1] );
-                            input.push_back( inflow[5][t-1] );
-                            input.push_back( inflow[9][t-1] );
-                            input.push_back( inflow[12][t-1] );
-                            input.push_back( sin( (2*pi*julian/365)-phi));
-                            
+                            input.push_back( inflow[2][t-1]+inflow[5][t-1]+inflow[9][t-1]+inflow[12][t-1]);
+                            input.push_back( sin( (2*pi*julian/365)-phi1));
+                            //input.push_back( sin( (2*pi*julian/365)-phi2));
                         
 
                             rbfs_inputs[0][t-1]=storage[2][t-1];
                             rbfs_inputs[1][t-1]=storage[5][t-1];
                             rbfs_inputs[2][t-1]=storage[9][t-1];
                             rbfs_inputs[3][t-1]=storage[12][t-1];
-                            rbfs_inputs[4][t-1]=inflow[2][t-1];
-                            rbfs_inputs[5][t-1]=inflow[5][t-1];
-                            rbfs_inputs[6][t-1]=inflow[9][t-1];
-                            rbfs_inputs[7][t-1]=inflow[12][t-1];
-                            rbfs_inputs[8][t-1]=sin( (2*pi*julian/365)-phi);
+                            rbfs_inputs[4][t-1]=inflow[2][t-1]+inflow[5][t-1]+inflow[9][t-1]+inflow[12][t-1];
+                            rbfs_inputs[5][t-1]=sin( (2*pi*julian/365)-phi1);
+                            //rbfs_inputs[6][t-1]=sin( (2*pi*julian/365)-phi2);
                         
 
 
@@ -768,7 +766,7 @@ void initializeGCL()
 
         TDA_unreg=inflow[47];
         
-        vector<vector<double> > ICF_file=utils::loadMatrix("../data/optimize_four/ICF_48.txt",sim_days/365,1,1,0);
+        vector<vector<double> > ICF_file=utils::loadMatrix("../data/optimize_four_1000/101/icf.txt",sim_days/365,1,1,0);
         utils::transpose(ICF_file);
         ICFs=ICF_file[0];
 
@@ -782,6 +780,7 @@ void preprocess()
         utils::transpose(modelled_storage);
         utils::transpose(modelled_generation);
         utils::transpose(inflow);
+        utils::transpose(synth_weather);
         utils::transpose(maxhydro_matrix);
         utils::transpose(maxstorage_matrix);
         utils::transpose(power_constants);
@@ -817,6 +816,8 @@ void writeSimulationOutput(unsigned int rank_no,unsigned int master_no)
         utils::writeMatrix(modelled_discharge,"../output_opt/policy"+to_string(rank_no)+"/modelled_discharge"+to_string(master_no)+".txt", sim_days+1, M);
         utils::writeMatrix(modelled_storage,"../output_opt/policy"+to_string(rank_no)+"/modelled_storage"+to_string(master_no)+".txt", sim_days+1, M);
         utils::writeMatrix(modelled_generation,"../output_opt/policy"+to_string(rank_no)+"/modelled_generation"+to_string(master_no)+".txt", sim_days+1, M+1);
+        utils::writeMatrix(inflow,"../output_opt/policy"+to_string(rank_no)+"/inflow"+to_string(master_no)+".txt", sim_days+1, M_comp);
+        utils::writeMatrix(total_inflow,"../output_opt/policy"+to_string(rank_no)+"/total_inflow"+to_string(master_no)+".txt", sim_days+1, M);
         //cout<<"write simulatio output "<<to_string(rank_no)+" "<<to_string(master_no)<<endl;
         utils::transpose(generation_fcrps);
         utils::writeMatrix(generation_fcrps,"../output_opt/policy"+to_string(rank_no)+"/generation_fcrps"+to_string(master_no)+".txt", sim_days, M_HR);
@@ -938,11 +939,11 @@ vector<double> getCaisoPrices(unsigned int rank_no,unsigned int master_no)
 
           int j;
           
-          vector<double> caiso_prices_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models/ca_linear_coef.txt");
-          vector<double> arima_caiso_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models/ca_arima_coef.txt");
+          vector<double> caiso_prices_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models_surrogate_wload/ca_linear_coef_list.txt");
+          vector<double> arima_caiso_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models_surrogate_wload/ca_arima_coef_list.txt");
           
-          vector<vector<double> > residuals_matrix=utils::readMatrixFromDataFile("../data/cons_opt/models/CA_cons_residuals_cpp.txt");
-          vector<double> quantiles_list=utils::loadVectorFromDataFile("../data/cons_opt/models/ca_quantiles_list.txt");
+          vector<vector<double> > residuals_matrix=utils::readMatrixFromDataFile("../data/cons_opt/models_surrogate_wload/ca_cons_residuals_cpp.txt");
+          vector<double> quantiles_list=utils::loadVectorFromDataFile("../data/cons_opt/models_surrogate_wload/ca_quantiles_list.txt");
           vector<double> Y_t(sim_days,0);
           vector<double> e_t(sim_days+2,0);
           vector<double> w_t(sim_days+2,0);
@@ -959,19 +960,15 @@ vector<double> getCaisoPrices(unsigned int rank_no,unsigned int master_no)
            e_t[t+2]=arima_caiso_coeff[0]*e_t[(t+2)-1]+arima_caiso_coeff[1]*e_t[(t+2)-2]+arima_caiso_coeff[2]*w_t[(t+2)-1]+arima_caiso_coeff[3]*w_t[(t+2)-2];
            Y_t[t] =  caiso_prices_coeff[0] 
                    + caiso_prices_coeff[1]*modelled_demands[0][t]
-                   + caiso_prices_coeff[2]*modelled_demands[4][t]
-                   + caiso_prices_coeff[3]*modelled_demands[6][t]
-                   + caiso_prices_coeff[4]*modelled_demands[8][t]
-                   + caiso_prices_coeff[5]*modelled_demands[10][t]
-                   + caiso_prices_coeff[6]*modelled_demands[11][t]
-                   + caiso_prices_coeff[7]*modelled_demands[13][t]
-                   + caiso_prices_coeff[8]*modelled_demands[14][t]
-                   + caiso_prices_coeff[9]*modelled_solar[0][t]
-                   + caiso_prices_coeff[10]*modelled_wind[0][t]
-                   + caiso_prices_coeff[11]*modelled_cahydro[0][t]
-                   + caiso_prices_coeff[12]*(utils::columnSumRow(generation_fcrps,t)+extra_generation[0][t])
-                   + caiso_prices_coeff[13]*sin( 2*pi*julians[t]/7)
-                   + caiso_prices_coeff[14]*cos( 2*pi*julians[t]/7);
+                   + caiso_prices_coeff[2]*modelled_demands[3][t]
+                   + caiso_prices_coeff[3]*modelled_demands[4][t]
+                   + caiso_prices_coeff[4]*modelled_demands[5][t]
+                   + caiso_prices_coeff[5]*modelled_solar[0][t]
+                   + caiso_prices_coeff[6]*modelled_wind[0][t]
+                   + caiso_prices_coeff[7]*modelled_cahydro[0][t]
+                   + caiso_prices_coeff[8]*(utils::columnSumRow(generation_fcrps,t)+extra_generation[0][t])
+                   + caiso_prices_coeff[9]*sin( 2*pi*julians[t]/7)
+                   + caiso_prices_coeff[10]*cos( 2*pi*julians[t]/7);
 
             fitted_value= Y_t[t]+e_t[t+2];
             
@@ -1010,16 +1007,16 @@ vector<double> getMidCPrices(unsigned int rank_no,unsigned int master_no)
 {
 
           int j;
-          vector<double> caiso_prices_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models/midc_linear_coef.txt");
-          vector<double> arima_caiso_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models/midc_arima_coef.txt");
+          vector<double> caiso_prices_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models_surrogate_wload/midc_linear_coef_list.txt");
+          vector<double> arima_caiso_coeff=utils::loadVectorFromDataFile("../data/cons_opt/models_surrogate_wload/midc_arima_coef_list.txt");
           
-          vector<vector<double> > residuals_matrix=utils::readMatrixFromDataFile("../data/cons_opt/models/MidC_cons_residuals_cpp.txt");
-          vector<double> quantiles_list=utils::loadVectorFromDataFile("../data/cons_opt/models/midc_quantiles_list.txt");
+          vector<vector<double> > residuals_matrix=utils::readMatrixFromDataFile("../data/cons_opt/models_surrogate_wload/midc_cons_residuals_cpp.txt");
+          vector<double> quantiles_list=utils::loadVectorFromDataFile("../data/cons_opt/models_surrogate_wload/midc_quantiles_list.txt");
           vector<double> Y_t(sim_days,0);
           vector<double> e_t(sim_days+2,0);
           vector<double> w_t(sim_days+2,0);
           vector<int> bucket_index(sim_days,-1);
-          w_t[0]=0;//taken the last two values from ARIMA(1,0,2) model
+          w_t[0]=0;//taken the last two values from ARIMA(2,0,2) model
           w_t[1]=0;
           e_t[0]=0;//taken the last value from the predictor's model
           e_t[1]=0;
@@ -1031,19 +1028,16 @@ vector<double> getMidCPrices(unsigned int rank_no,unsigned int master_no)
            e_t[t+2]=arima_caiso_coeff[0]*e_t[(t+2)-1]+arima_caiso_coeff[1]*e_t[(t+2)-2]+arima_caiso_coeff[2]*w_t[(t+2)-1]+arima_caiso_coeff[3]*w_t[(t+2)-2];
            Y_t[t] =  caiso_prices_coeff[0] 
                    + caiso_prices_coeff[1]*modelled_demands[0][t]
-                   + caiso_prices_coeff[2]*modelled_demands[4][t]
-                   + caiso_prices_coeff[3]*modelled_demands[6][t]
-                   + caiso_prices_coeff[4]*modelled_demands[7][t]
-                   + caiso_prices_coeff[5]*modelled_demands[8][t]
-                   + caiso_prices_coeff[6]*modelled_demands[11][t]
-                   + caiso_prices_coeff[7]*modelled_demands[13][t]
-                   + caiso_prices_coeff[8]*modelled_demands[14][t]
-                   + caiso_prices_coeff[9]*modelled_solar[0][t]
-                   + caiso_prices_coeff[10]*modelled_wind[0][t]
-                   + caiso_prices_coeff[11]*modelled_cahydro[0][t]
-                   + caiso_prices_coeff[12]*(utils::columnSumRow(generation_fcrps,t)+extra_generation[0][t])
-                   + caiso_prices_coeff[13]*sin( 2*pi*julians[t]/7)
-                   + caiso_prices_coeff[14]*cos( 2*pi*julians[t]/7);
+                   + caiso_prices_coeff[2]*modelled_demands[1][t]
+                   + caiso_prices_coeff[3]*modelled_demands[3][t]
+                   + caiso_prices_coeff[4]*modelled_demands[4][t]
+                   + caiso_prices_coeff[5]*modelled_solar[0][t]
+                   + caiso_prices_coeff[6]*modelled_wind[0][t]
+                   + caiso_prices_coeff[7]*modelled_cahydro[0][t]
+                   + caiso_prices_coeff[8]*(utils::columnSumRow(generation_fcrps,t)+extra_generation[0][t])
+                   + caiso_prices_coeff[9]*sin( 2*pi*julians[t]/7)
+                   + caiso_prices_coeff[10]*cos( 2*pi*julians[t]/7);
+    
 
             fitted_value= Y_t[t]+e_t[t+2];
                     for (j=0;j<quantiles_list.size();j++)
@@ -1094,15 +1088,20 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    
    
    
-   vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
+   vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four_1000/101/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
    utils::transpose(extra_bpa_dams);
+   //cout<<"extra_bpa_dams[0].size() "<<extra_bpa_dams[0].size()<<endl;
+   //cout<<"meanVector(extra_bpa_dams[0]) "<<meanVector(extra_bpa_dams[0])<<endl;
    //vector<double> extra_gen=utils::columnSumMatrix(extra_bpa_dams);
    vector<double> bpa_gen=utils::columnSumMatrix(generation_shoal);
-   vector<double> bpa_gen_sub = {bpa_gen.begin() + 122, bpa_gen.end() - 243}; 
+   vector<double> bpa_gen_sub = {bpa_gen.begin() + 122, bpa_gen.end() - 243};
+   //cout<<"bpa_gen_sub.size() "<<bpa_gen_sub.size()<<endl;
+   //cout<<"meanVector(bpa_gen_sub) "<<meanVector(bpa_gen_sub)<<endl; 
    vector<double> BPA_hydro(bpa_gen_sub.size(),0);
    std::transform(bpa_gen_sub.begin(),bpa_gen_sub.end(), extra_bpa_dams[0].begin(),BPA_hydro.begin(),std::plus<double>());
    std::transform(BPA_hydro.begin(), BPA_hydro.end(), BPA_hydro.begin(),[=](double i) { return i/24; });
-   
+   //cout<<"BPA_hydro.size() "<<BPA_hydro.size()<<endl;
+   //cout<<"meanVector(BPA_hydro) "<<meanVector(BPA_hydro)<<endl;
    
    //cout<<" in revenue model 1"<<endl;
    vector<double> net_resources=utils::loadVectorFromDataFile("../data/Revenue Model/BPA_net_resources_2018.txt");
@@ -1117,13 +1116,15 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    BPAT_load= utils::matrixReshape( BPAT_load,sim_days,1);
    utils::transpose(BPAT_load);
    */
-   vector<double> load_bpa=utils::loadVectorFromDataFile("../data/optimize_four/daily_load_bpa.txt");
+   vector<double> load_bpa=modelled_demands[0];
    vector<double> BPAT_load={load_bpa.begin() + 365, load_bpa.begin() + 365+ bpa_rev_sim_days};
-   cout<<"BPAT_load.size() "<<BPAT_load.size()<<endl;
+   //cout<<"BPAT_load.size() "<<BPAT_load.size()<<endl;
+   //cout<<"meanVector(BPAT_load) "<<meanVector(BPAT_load)<<endl;
    //utils::transpose(modelled_wind);
-   vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four/wind_surrogate_bpa.txt");
+   vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four_1000/101/wind_surrogate_bpa.txt");
    vector<double> BPAT_wind={wind_bpa.begin() + 365, wind_bpa.begin() +365 +bpa_rev_sim_days}; 
-   cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<endl;
+   //cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<endl;
+   //cout<<"meanVector(BPAT_wind) "<<meanVector(BPAT_wind)<<endl;
    //std::transform(modelled_wind[0].begin(), modelled_wind[0].end(), BPAT_wind.begin(),[=](double i) { return i *(0.766/1.766); });
    
 
@@ -1363,6 +1364,66 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
         return BPA_Net_rev_y;
 }
 
+double flood_level_frequency(vector<double> floodlevel)
+{
+        int count_flood=0;
+        for(auto & flood : floodlevel)
+        {
+            if (flood>=17)
+                count_flood+=1;
+        }
+
+    return (1.0*count_flood)/sim_years;
+}
+
+
+double waterTempConstraints(unsigned int rank_no,unsigned int master_no)
+{
+
+        vector<double> Y_t(sim_days);
+        vector<double> watertmp_coeff=utils::loadVectorFromDataFile("../data/water_temp_model/water_temp_coef_list.txt");
+        double waterTempViolations=0;
+        for(int t=0;t<sim_days;t++)
+        {
+            Y_t[t] =  watertmp_coeff[0] 
+                   + watertmp_coeff[1]*sin( 2*pi*julians[t]/365)
+                   + watertmp_coeff[2]*cos( 2*pi*julians[t]/365)
+                   + watertmp_coeff[3]*total_inflow[35][t]/1000
+                   + watertmp_coeff[4]*((synth_weather[10][t]*9)/5+32)
+                   + watertmp_coeff[5]*synth_weather[11][t];
+            int julian=(int)julians[t];
+            if(60<=julian<=273)
+                {
+                    if(Y_t[t]>=71.06)
+                        waterTempViolations+=((Y_t[t]-71.06)*(Y_t[t]-71.06));
+                }
+            
+        }
+        if(write_output)
+        {
+            vector<vector<double> >Yt_matrix(1,vector<double> (sim_days,0));
+            Yt_matrix[0]=Y_t;
+            //utils::writeMatrix(Yt_matrix,"../output/MidC_prices0.txt", sim_days, 1);
+            utils::writeMatrix(Yt_matrix,"../output_opt/policy"+to_string(rank_no)+"/WaterTemp"+to_string(master_no)+".txt", sim_days, 1);
+        }
+
+        return waterTempViolations;
+
+}
+
+double storage_constraint()
+{
+        for (auto res : opt_reservoirs)
+        {
+            for(int t=1;t<=sim_days;t++)
+            {
+                if(storage[res][t]<=0)
+                    return 1.0;
+            }
+        }
+
+        return 0.0;
+}
 vector<double> getObjectives(unsigned int rank_no,unsigned int master_no)
 {
         //cout<<"before simulate"<<rank_no<<" "<<master_no<<endl;
@@ -1378,6 +1439,8 @@ vector<double> getObjectives(unsigned int rank_no,unsigned int master_no)
         //cout<<"historical flood "<<*max_element(floodlevel_historical.begin(), floodlevel_historical.end())<<endl;
         J.push_back(*max_element(floodlevel.begin(), floodlevel.end()));
         J.push_back((meanVector(getRevenueBPA(rank_no,master_no))/1000000)*-1);
+        J.push_back(flood_level_frequency(floodlevel));
+        J.push_back(waterTempConstraints(rank_no,master_no));
 
         return J;
 
@@ -1409,9 +1472,9 @@ void initializeRBFs(unsigned int rank_no,unsigned int master_no)
                 for(int i=0;i<1;i++)
                 {   
                 p_param[i].tPolicy=1;
-                p_param[i].policyInput=9;
+                p_param[i].policyInput=6;
                 p_param[i].policyOutput=4;
-                p_param[i].policyStr=14;
+                p_param[i].policyStr=p_param[i].policyInput+p_param[i].policyOutput+1;
                 param_function* mp1 = new rbf(p_param[i].policyInput,p_param[i].policyOutput,p_param[i].policyStr);
                 //param_function* mp1 = new ncRBF(p_param[i].policyInput,p_param[i].policyOutput,p_param[i].policyStr);
                 mPolicy[i] = mp1;
@@ -1424,23 +1487,24 @@ void initializeRBFs(unsigned int rank_no,unsigned int master_no)
                         p_param[i].mIn.push_back(0);
                         p_param[i].mIn.push_back(0);
                         p_param[i].mIn.push_back(0);
-                        p_param[i].mIn.push_back(min_max_inflow_rbfs_range[0][0]);
-                        p_param[i].mIn.push_back(min_max_inflow_rbfs_range[1][0]);
-                        p_param[i].mIn.push_back(min_max_inflow_rbfs_range[2][0]);
-                        p_param[i].mIn.push_back(min_max_inflow_rbfs_range[3][0]);
+                        p_param[i].mIn.push_back(min_max_inflow_rbfs_range[0][0]+min_max_inflow_rbfs_range[1][0]+min_max_inflow_rbfs_range[2][0]+min_max_inflow_rbfs_range[3][0]);
+                        //p_param[i].mIn.push_back(min_max_inflow_rbfs_range[1][0]);
+                        //p_param[i].mIn.push_back(min_max_inflow_rbfs_range[2][0]);
+                        //p_param[i].mIn.push_back(min_max_inflow_rbfs_range[3][0]);
                         p_param[i].mIn.push_back(-1);
+                        //p_param[i].mIn.push_back(-1);
                         
                         
                         p_param[i].MIn.push_back(s_max[2]);
                         p_param[i].MIn.push_back(s_max[5]);
                         p_param[i].MIn.push_back(s_max[9]);
                         p_param[i].MIn.push_back(s_max[12]);
-                        p_param[i].MIn.push_back(min_max_inflow_rbfs_range[0][1]);
-                        p_param[i].MIn.push_back(min_max_inflow_rbfs_range[1][1]);
-                        p_param[i].MIn.push_back(min_max_inflow_rbfs_range[2][1]);
-                        p_param[i].MIn.push_back(min_max_inflow_rbfs_range[3][1]);
+                        p_param[i].MIn.push_back(min_max_inflow_rbfs_range[0][1]+min_max_inflow_rbfs_range[1][1]+min_max_inflow_rbfs_range[2][1]+min_max_inflow_rbfs_range[3][1]);
+                        //p_param[i].MIn.push_back(min_max_inflow_rbfs_range[1][1]);
+                        //p_param[i].MIn.push_back(min_max_inflow_rbfs_range[2][1]);
+                        //p_param[i].MIn.push_back(min_max_inflow_rbfs_range[3][1]);
                         p_param[i].MIn.push_back(1);
-                        
+                        //p_param[i].MIn.push_back(1);
 
                         p_param[i].mOut.push_back(0);
                         p_param[i].mOut.push_back(0);
@@ -1464,7 +1528,7 @@ void initializeRBFs(unsigned int rank_no,unsigned int master_no)
 void evaluate(double* var, double* obj, double* constrs, unsigned int inp_rank_no,unsigned int inp_master_no){
 
         unsigned int rank_no= inp_rank_no,master_no=inp_master_no;
-        int decsvars=281;
+        int decsvars=155;
         //cout<<"evaluate first line"<<rank_no<<" "<<master_no<<endl;
         initializeRBFs(rank_no,master_no);
         //cout<<"evaluate initializeRBFs"<<rank_no<<" "<<master_no<<endl;
@@ -1527,12 +1591,12 @@ void evaluate(double* var, double* obj, double* constrs, unsigned int inp_rank_n
                         }
                         
                 }
-                phi=p2++;
+                phi1=p2++;
+                //phi2=p2++;
 
                 mPolicy[k]->setParameters(fullVar);
                 
-                //cout<<"mPolicy[k]->param "<< mPolicy[k]->param << endl;
-
+                
                 
                 getArrayLength = sizeof(fullVar) / sizeof(double);
                 vector<double> full_vars_vector(getArrayLength,0);
@@ -1557,6 +1621,10 @@ void evaluate(double* var, double* obj, double* constrs, unsigned int inp_rank_n
                 for(unsigned int i=0; i<Nobj; i++){
                               obj[i] = J[i];
                              }
+                //cout<<"mPolicy[k]->param "<< mPolicy[k]->param << endl;
+                constrs[0]= max(0.0,storage_constraint());
+                cout<<"rank_no "<<rank_no<<"storage_constraint() "<<storage_constraint()<<endl;
+                cout<<"rank_no "<<rank_no<<"constrs[0] "<<constrs[0]<<endl;
                 
 
                 if(write_output)

@@ -12,7 +12,7 @@ all: CRB_FCRPS
 CRB_FCRPS: runCRBparallelJared.o borgmm.o  mt19937ar.o
 	$(CXX) runCRBparallelJared.o borgmm.o mt19937ar.o -o CRB_FCRPS
 
-runCRBparallelJared.o: runCRBparallelJared.cpp HYSSR_CRB_model.cpp \
+runCRBparallelJared.o: runCRBparallelJared.cpp HYSSR_CRB_model_gcl.cpp \
 	../borg_jared/borgmm.h
 	$(CXX) $(CXXFLAGS) runCRBparallelJared.cpp
 
