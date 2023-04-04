@@ -802,7 +802,7 @@ void preprocess()
 void writeSimulationOutput(unsigned int rank_no,unsigned int master_no)
 {
 
-        cout<<"inside writing simulate"<<endl;
+        //cout<<"inside writing simulate"<<endl;
         utils::writeMatrix(generation,"../output_opt/policy"+to_string(rank_no)+"/generation_hyssr"+to_string(master_no)+".txt", sim_days+1, M);
         utils::writeMatrix(storage,"../output_opt/policy"+to_string(rank_no)+"/storage_hyssr"+to_string(master_no)+".txt", sim_days+1, M);
         utils::writeMatrix(discharge,"../output_opt/policy"+to_string(rank_no)+"/discharge_hyssr"+to_string(master_no)+".txt", sim_days+1, M);
@@ -1077,7 +1077,9 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    MidC[0]=getMidCPrices(rank_no,master_no);
    CAISO[0]=getCaisoPrices(rank_no,master_no);
    vector<double> midc_prices = {MidC[0].begin() + 122, MidC[0].end() - 243}; 
-   vector<double> caiso_prices = {CAISO[0].begin() + 122, CAISO[0].end() - 243}; 
+   vector<double> caiso_prices = {CAISO[0].begin() + 122, CAISO[0].end() - 243};
+   //cout<<"meanVector(midc_prices) "<<meanVector(midc_prices)<<"rank_no "<<rank_no<<endl;
+   //cout<<"meanVector(caiso_prices]) "<<meanVector(caiso_prices)<<"rank_no "<<rank_no<<endl;
 
    
    vector<double> load_vector=utils::loadVectorFromDataFile("../data/Revenue Model/load_2018.txt");
@@ -1090,18 +1092,18 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    
    vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four_1000/101/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
    utils::transpose(extra_bpa_dams);
-   //cout<<"extra_bpa_dams[0].size() "<<extra_bpa_dams[0].size()<<endl;
-   //cout<<"meanVector(extra_bpa_dams[0]) "<<meanVector(extra_bpa_dams[0])<<endl;
+   //cout<<"extra_bpa_dams[0].size() "<<extra_bpa_dams[0].size()<<"rank_no "<<rank_no<<endl;
+   //cout<<"meanVector(extra_bpa_dams[0]) "<<meanVector(extra_bpa_dams[0])<<"rank_no "<<rank_no<<endl;
    //vector<double> extra_gen=utils::columnSumMatrix(extra_bpa_dams);
    vector<double> bpa_gen=utils::columnSumMatrix(generation_shoal);
    vector<double> bpa_gen_sub = {bpa_gen.begin() + 122, bpa_gen.end() - 243};
-   //cout<<"bpa_gen_sub.size() "<<bpa_gen_sub.size()<<endl;
-   //cout<<"meanVector(bpa_gen_sub) "<<meanVector(bpa_gen_sub)<<endl; 
+   //cout<<"bpa_gen_sub.size() "<<bpa_gen_sub.size()<<"rank_no "<<rank_no<<endl;
+   //cout<<"meanVector(bpa_gen_sub) "<<meanVector(bpa_gen_sub)<<"rank_no "<<rank_no<<endl;
    vector<double> BPA_hydro(bpa_gen_sub.size(),0);
    std::transform(bpa_gen_sub.begin(),bpa_gen_sub.end(), extra_bpa_dams[0].begin(),BPA_hydro.begin(),std::plus<double>());
    std::transform(BPA_hydro.begin(), BPA_hydro.end(), BPA_hydro.begin(),[=](double i) { return i/24; });
-   //cout<<"BPA_hydro.size() "<<BPA_hydro.size()<<endl;
-   //cout<<"meanVector(BPA_hydro) "<<meanVector(BPA_hydro)<<endl;
+   //cout<<"BPA_hydro.size() "<<BPA_hydro.size()<<"rank_no "<<rank_no<<endl;
+   //cout<<"meanVector(BPA_hydro) "<<meanVector(BPA_hydro)<<"rank_no "<<rank_no<<endl;
    
    //cout<<" in revenue model 1"<<endl;
    vector<double> net_resources=utils::loadVectorFromDataFile("../data/Revenue Model/BPA_net_resources_2018.txt");
@@ -1118,13 +1120,13 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    */
    vector<double> load_bpa=modelled_demands[0];
    vector<double> BPAT_load={load_bpa.begin() + 365, load_bpa.begin() + 365+ bpa_rev_sim_days};
-   //cout<<"BPAT_load.size() "<<BPAT_load.size()<<endl;
-   //cout<<"meanVector(BPAT_load) "<<meanVector(BPAT_load)<<endl;
+   //cout<<"BPAT_load.size() "<<BPAT_load.size()<<"rank_no "<<rank_no<<endl;
+   //cout<<"meanVector(BPAT_load) "<<meanVector(BPAT_load)<<"rank_no "<<rank_no<<endl;
    //utils::transpose(modelled_wind);
    vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four_1000/101/wind_surrogate_bpa.txt");
    vector<double> BPAT_wind={wind_bpa.begin() + 365, wind_bpa.begin() +365 +bpa_rev_sim_days}; 
-   //cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<endl;
-   //cout<<"meanVector(BPAT_wind) "<<meanVector(BPAT_wind)<<endl;
+   //cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<"rank_no "<<rank_no<<endl;
+   //cout<<"meanVector(BPAT_wind) "<<meanVector(BPAT_wind)<<"rank_no "<<rank_no<<endl;
    //std::transform(modelled_wind[0].begin(), modelled_wind[0].end(), BPAT_wind.begin(),[=](double i) { return i *(0.766/1.766); });
    
 
@@ -1622,9 +1624,9 @@ void evaluate(double* var, double* obj, double* constrs, unsigned int inp_rank_n
                               obj[i] = J[i];
                              }
                 //cout<<"mPolicy[k]->param "<< mPolicy[k]->param << endl;
-                constrs[0]= max(0.0,storage_constraint());
-                cout<<"rank_no "<<rank_no<<"storage_constraint() "<<storage_constraint()<<endl;
-                cout<<"rank_no "<<rank_no<<"constrs[0] "<<constrs[0]<<endl;
+                constrs[0]= storage_constraint();
+                //cout<<"rank_no "<<rank_no<<"storage_constraint() "<<storage_constraint()<<endl;
+                //cout<<"rank_no "<<rank_no<<"constrs[0] "<<constrs[0]<<endl;
                 
 
                 if(write_output)

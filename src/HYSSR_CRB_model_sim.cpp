@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
          double* var_array = &vars[0];
          double* obj_array = &objs[0];
          double* constrs_array = &constrs[0];
-         obj1.evaluate(var_array,obj_array, constrs_array,world_rank,0);
+         obj1.evaluate(var_array,obj_array, constrs_array,world_rank,1);
          
          
         MPI_Finalize();
