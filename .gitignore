@@ -3,3 +3,10 @@ job_output/
 output_opt/
 borg_jared/
 makeDirectory.py
+src/CRB_FCRPS
+src/MakeFile
+src/borgmmo.o
+src/mt19937ar.o
+src/runCRBparallelJared.o
+sets/
+runtime/
