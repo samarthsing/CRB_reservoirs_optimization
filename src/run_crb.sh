@@ -14,4 +14,4 @@ module load gcc/9.2.0 openmpi/3.1.6
 
 # Your commands go here
 # arguments are <seed> <nfe/time> <islands>
-srun ./CRB_FCRPS 23 71.2 2
+srun ./CRB_FCRPS 96 71.2 2

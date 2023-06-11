@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
           
          //vector<vector<double> > objs_matrix=vector<vector<double> >(vars_matrix.size());
          vector<double> objs(6,0);
-         vector<double> constrs(1,0);
+         vector<double> constrs(2,0);
           
          vector<double> vars;
          vars = vars_matrix[world_rank];
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
          double* var_array = &vars[0];
          double* obj_array = &objs[0];
          double* constrs_array = &constrs[0];
-         obj1.evaluate(var_array,obj_array, constrs_array,world_rank,1);
+         obj1.evaluate(var_array,obj_array, constrs_array,world_rank,0);
          
          
         MPI_Finalize();

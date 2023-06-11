@@ -38,8 +38,9 @@ int sim_days=sim_years*365;
 int no_years=sim_years+2;
 int bpa_rev_sim_years=sim_years-1;
 int bpa_rev_sim_days=sim_days-365;
-int Nobj=6;
-bool write_output=true;
+int Nobj=5;
+bool write_output=false;
+int folder_no=204;
 bool CompareDoubles2 (double A, double B)
 {
    double diff = A - B;
@@ -57,14 +58,15 @@ double kaf_ksfd_conversion=0.504165;
 int start_row=243;
 int start_col=0;
 double sdNegativeSumOpt;
+double sdNegativeSumHist=-370797;
 
-vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four_1000/101/discharge.txt",sim_days+1,M,365-1,start_col);//water year
+vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/discharge.txt",sim_days+1,M,365-1,start_col);//water year
 //vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/mod_discharge_sim_arrow.txt",sim_days+1,M,0,start_col);//arrow changed
 //vector<vector<double> > modelled_discharge=utils::loadMatrix("../data/optimize_four/mod_discharge_sim_arrow_dun.txt",sim_days+1,M,0,start_col);//arrow changed
-vector<vector<double> > modelled_storage=utils::loadMatrix("../data/optimize_four_1000/101/storage.txt",sim_days+1,M,365-1,start_col);//water year
-vector<vector<double> > modelled_generation=utils::loadMatrix("../data/optimize_four_1000/101/generation.txt",sim_days+1,M,365-1,start_col);//water year
-vector<vector<double> > inflow=utils::loadMatrix("../data/optimize_four_1000/101/inflows.txt",sim_days+1,M_comp,start_row+365-1,start_col);//jan 1
-vector<vector<double> > synth_weather=utils::loadMatrix("../data/optimize_four_1000/101/synth_weather.txt",sim_days+1,34,start_row+365-1,start_col);//jan 1
+vector<vector<double> > modelled_storage=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/storage.txt",sim_days+1,M,365-1,start_col);//water year
+vector<vector<double> > modelled_generation=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/generation.txt",sim_days+1,M+1,365-1,start_col);//water year
+vector<vector<double> > inflow=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/inflows.txt",sim_days+1,M_comp,start_row+365-1,start_col);//jan 1
+vector<vector<double> > synth_weather=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/synth_weather.txt",sim_days+1,34,start_row+365-1,start_col);//jan 1
 
 vector<vector<double> > maxhydro_matrix=utils::readMatrixFromDataFile("../data/HYSSR/max_hydropower.txt");
 vector<vector<double> > maxstorage_matrix=utils::readMatrixFromDataFile("../data/HYSSR/max_storage.txt");
@@ -81,11 +83,11 @@ vector<vector<double> > discharge=modelled_discharge;
 //vector<vector<double> > storage(M,vector<double> (sim_days+1,0));
 
 //Data structure to model the prices
-vector<vector<double> > modelled_demands    = utils::loadMatrix("../data/optimize_four_1000/101/daily_load_data.txt",sim_days,6,start_row,start_col);//jan 1
-vector<vector<double> > modelled_solar      = utils::loadMatrix("../data/optimize_four_1000/101/solar_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > modelled_wind       = utils::loadMatrix("../data/optimize_four_1000/101/wind_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > modelled_cahydro    = utils::loadMatrix("../data/optimize_four_1000/101/CA_hydro_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
-vector<vector<double> > extra_generation    = utils::loadMatrix("../data/optimize_four_1000/101/extra_gen.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_demands    = utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/daily_load_data.txt",sim_days,6,start_row,start_col);//jan 1
+vector<vector<double> > modelled_solar      = utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/solar_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_wind       = utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/wind_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > modelled_cahydro    = utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/CA_hydro_surrogate.txt",sim_days,1,start_row,start_col);//jan 1
+vector<vector<double> > extra_generation    = utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/extra_gen.txt",sim_days,1,start_row,start_col);//jan 1
 
 map<int,int> PF_rates_months;
 void makePF_rates_monthsIndexing()
@@ -130,7 +132,7 @@ double calculate_CRAC(double NR_, double tot_load)
 
 vector<vector<double> > storage=modelled_storage;
 vector<vector<double> > total_inflow=vector<vector<double> >(M,vector<double> (sim_days+1,0));
-vector<vector<double> > generation=vector<vector<double> >(M,vector<double> (sim_days+1,0));
+vector<vector<double> > generation=vector<vector<double> >(M+1,vector<double> (sim_days+1,0));
 vector<vector<double> > spill=vector<vector<double> >(M,vector<double> (sim_days+1,0));
 vector<vector<double> > powerflow=vector<vector<double> >(M,vector<double> (sim_days+1,0));
 vector<vector<double> > tailwater=vector<vector<double> >(M,vector<double> (sim_days+1,0));
@@ -766,7 +768,7 @@ void initializeGCL()
 
         TDA_unreg=inflow[47];
         
-        vector<vector<double> > ICF_file=utils::loadMatrix("../data/optimize_four_1000/101/icf.txt",sim_days/365,1,1,0);
+        vector<vector<double> > ICF_file=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/icf.txt",sim_days/365,1,1,0);
         utils::transpose(ICF_file);
         ICFs=ICF_file[0];
 
@@ -1090,7 +1092,7 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    
    
    
-   vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four_1000/101/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
+   vector<vector<double> > extra_bpa_dams=utils::loadMatrix("../data/optimize_four_1000/"+to_string(folder_no)+"/extra_bpa.txt",bpa_rev_sim_days,1,365,start_col);
    utils::transpose(extra_bpa_dams);
    //cout<<"extra_bpa_dams[0].size() "<<extra_bpa_dams[0].size()<<"rank_no "<<rank_no<<endl;
    //cout<<"meanVector(extra_bpa_dams[0]) "<<meanVector(extra_bpa_dams[0])<<"rank_no "<<rank_no<<endl;
@@ -1123,7 +1125,7 @@ vector<double> getRevenueBPA(unsigned int rank_no,unsigned int master_no)
    //cout<<"BPAT_load.size() "<<BPAT_load.size()<<"rank_no "<<rank_no<<endl;
    //cout<<"meanVector(BPAT_load) "<<meanVector(BPAT_load)<<"rank_no "<<rank_no<<endl;
    //utils::transpose(modelled_wind);
-   vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four_1000/101/wind_surrogate_bpa.txt");
+   vector<double> wind_bpa=utils::loadVectorFromDataFile("../data/optimize_four_1000/"+to_string(folder_no)+"/wind_surrogate_bpa.txt");
    vector<double> BPAT_wind={wind_bpa.begin() + 365, wind_bpa.begin() +365 +bpa_rev_sim_days}; 
    //cout<<"BPAT_wind.size() "<<BPAT_wind.size()<<"rank_no "<<rank_no<<endl;
    //cout<<"meanVector(BPAT_wind) "<<meanVector(BPAT_wind)<<"rank_no "<<rank_no<<endl;
@@ -1437,12 +1439,12 @@ vector<double> getObjectives(unsigned int rank_no,unsigned int master_no)
         J.push_back(meanVector(minEnvironmentConstraints()));
         J.push_back(-1*meanVector(maxRenewablesGeneration()));
         vector<double> floodlevel=floodLevel(rank_no,master_no,discharge[42]);
-        //vector<double> floodlevel_historical=floodLevel(rank_no,master_no,modelled_discharge[42]);
-        //cout<<"historical flood "<<*max_element(floodlevel_historical.begin(), floodlevel_historical.end())<<endl;
+        vector<double> floodlevel_historical=floodLevel(rank_no,master_no,modelled_discharge[42]);
+        cout<<"historical flood "<<*max_element(floodlevel_historical.begin(), floodlevel_historical.end())<<endl;
         J.push_back(*max_element(floodlevel.begin(), floodlevel.end()));
         J.push_back((meanVector(getRevenueBPA(rank_no,master_no))/1000000)*-1);
         J.push_back(flood_level_frequency(floodlevel));
-        J.push_back(waterTempConstraints(rank_no,master_no));
+        //J.push_back(waterTempConstraints(rank_no,master_no));
 
         return J;
 
@@ -1625,6 +1627,7 @@ void evaluate(double* var, double* obj, double* constrs, unsigned int inp_rank_n
                              }
                 //cout<<"mPolicy[k]->param "<< mPolicy[k]->param << endl;
                 constrs[0]= storage_constraint();
+                constrs[1] = max(0.0, sdNegativeSumOpt - sdNegativeSumHist);
                 //cout<<"rank_no "<<rank_no<<"storage_constraint() "<<storage_constraint()<<endl;
                 //cout<<"rank_no "<<rank_no<<"constrs[0] "<<constrs[0]<<endl;
                 
