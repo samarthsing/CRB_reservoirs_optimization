@@ -4,7 +4,7 @@
 #SBATCH -N 22           # Total number of nodes to request (up to 120)
 #SBATCH --ntasks-per-node 40           # Number of processors per node (up to 20)
 #SBATCH -p parallel           # Queue name "parallel"
-#SBATCH -A quinnlab_paid       # allocation name
+#SBATCH -A quinnlab       # allocation name
 #SBATCH -t 72:00:00        # Run time (hh:mm:ss) - up to 36 hours
 #SBATCH --mail-user=ss9vz@virginia.edu              # address for email notification
 #SBATCH --mail-type=ALL                  # email at Begin and End of job
