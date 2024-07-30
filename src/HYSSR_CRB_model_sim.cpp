@@ -28,11 +28,11 @@ int main(int argc, char* argv[])
          //vector<double> vars=utils::loadVectorFromDataFile("min_spill_pareto.txt");
           
          //vector<vector<double> > objs_matrix=vector<vector<double> >(vars_matrix.size());
-         vector<double> objs(6,0);
+         vector<double> objs(5,0);
          vector<double> constrs(2,0);
           
          vector<double> vars;
-         vars = vars_matrix[world_rank];
+         vars = vars_matrix[world_rank%110];
          cout<<vars.size()<<endl; 
          MyClass obj1=MyClass();
          //Fcrps obj2=Fcrps(vars);
