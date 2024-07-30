@@ -12,5 +12,5 @@ module load gcc/9.2.0 openmpi/3.1.6
 
 # Your commands go here
 # arguments are <seed> <NFE>
-g++ -std=c++2a HYSSR_CRB_model_hyssr_copy.cpp -o run_model
+g++ -std=c++2a HYSSR_CRB_model_hyssr.cpp -o run_model
 srun ./run_model
