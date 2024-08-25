@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the following metadata."
+title: "CRB optimization exploring economic vs environmental benefits"
+version: "1.0.1"
+doi: "10.5281/zenodo.11962296"
+date-released: 2024-08-25
+authors:
+  - family-names: "Singh"
+    given-names: "Samarth"
+    orcid: "https://orcid.org/0000-0003-4564-9746"
+identifiers:
+  - type: "doi"
+    value: "10.5281/zenodo.11962296"
